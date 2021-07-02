@@ -1,0 +1,15 @@
+extends layout
+
+block content
+    div
+        h1 These are the api routes
+        h2 GET ROUTES
+            p /startGame : checks if there is 18 cards present among the players 
+            p /board : provides a full board detail 
+            p /boardSummary : provides a summary of the board 
+            p /endGame : deletes all players from the database 
+        h2 POST ROUTES 
+            p /addPlayer : adds a player to the game 
+            p /removePlayer : removes a player from the game 
+            p /addMove : adds a move and updates the board
+        
