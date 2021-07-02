@@ -1,6 +1,9 @@
 var express = require('express');
 var router = express.Router();
 let mainController = require('../controllers/mainController')
+var cors = require('cors');
+
+router.use(cors());
 
 router.get('/', async (req,res,next) => {
     res.render('index');
