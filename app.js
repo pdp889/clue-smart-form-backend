@@ -5,10 +5,13 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 require('dotenv').config()
 let mongoose = require('mongoose')
+var cors = require('cors');
+
 
 var indexRouter = require('./routes/index');
 
 var app = express();
+app.use(cors())
 
 //set up MongoDB
 const mongoDB = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.lwhet.mongodb.net/clue_app?retryWrites=true&w=majority`;
