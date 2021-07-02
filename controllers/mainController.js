@@ -11,8 +11,7 @@ exports.add_player_post = async(req,res,next) => {
         name: req.body.name,
         tracking_array: req.body.tracking_array,
         number_cards: req.body.number_cards,
-        user: req.body.user,
-        requests: req.body.requests
+        requests: []
     })
 
     if (!errors.isEmpty()){
