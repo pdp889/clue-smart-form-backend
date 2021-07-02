@@ -1,6 +1,5 @@
 let Player = require('../models/player');
 const { body,validationResult } = require('express-validator');
-const { find } = require('../models/player');
 
 // Add player to database
 exports.add_player_post = async(req,res,next) => {
