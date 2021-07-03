@@ -82,6 +82,11 @@ exports.add_move_get = async(req,res,next) => {
 //should add a move and update the database accordingly
 exports.add_move_post = async(req,res,next) => {
     
+    let bool = false;
+    if (req.body.all_no == 'true') {
+        bool = true;
+    }
+
     let playerid = req.body.playerId;
     let request = req.body.request;
     let cardshown = parseInt(req.body.cardshown);
@@ -92,15 +97,16 @@ exports.add_move_post = async(req,res,next) => {
 
     // this will change the status quo to where it should be.
     let player = await Player.findOne({ _id: playerid, user: decoded });
-    console.log(player);
     if (cardshown >= 0 && all_no === false){
+        console.log('A card is shown');
         player.tracking_array[cardshown] = 1;
     } else if(all_no === true){
+        console.log('no card is shown');
         for (let i =0; i<3; i++){
             player.tracking_array[request[i]] = -1;
         }
     } else {
-        console.log(player.requests);
+        console.log('a card is shown but we dont know what')
         let lastSpot = player.requests.length;
         if (!lastSpot) {
             lastSpot = 0;
@@ -265,12 +271,10 @@ const updatePlayer = async (updated, decoded) => {
 
         }
     }
-    console.log(updated);
 
     updated.requests.forEach(request => {
         let ultimateRequest = [];
         let yes = false;
-        console.log(request)
         //if any value in the request is a yes, 
         for(let i =0; i<3; i++){
             
@@ -307,13 +311,10 @@ const updatePlayer = async (updated, decoded) => {
         } else if (ultimateRequest.length != 0){
             requests.push(ultimateRequest);
         }
-        console.log(ultimateRequest);
         
     })
         
     updated.requests = requests;
-    console.log('updated requests');
-    console.log(updated.requests)
     let array = await checkArray(updated.number_cards, updated.tracking_array);
     updated.trackingArray = array;
     
