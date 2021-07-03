@@ -97,10 +97,10 @@ exports.add_move_post = async(req,res,next) => {
 
     // this will change the status quo to where it should be.
     let player = await Player.findOne({ _id: playerid, user: decoded });
-    if (cardshown >= 0 && all_no === false){
+    if (cardshown >= 0 && all_no == false){
         console.log('A card is shown');
         player.tracking_array[cardshown] = 1;
-    } else if(all_no === true){
+    } else if(all_no == true){
         console.log('no card is shown');
         for (let i =0; i<3; i++){
             player.tracking_array[request[i]] = -1;
