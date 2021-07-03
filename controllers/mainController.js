@@ -84,7 +84,7 @@ exports.add_move_post = async(req,res,next) => {
     
     let playerid = req.body.playerId;
     let request = req.body.request;
-    let cardshown = req.body.cardshown;
+    let cardshown = parseInt(req.body.cardshown);
     let all_no = req.body.all_no;
 
     let token = req.headers.authorization.split(' ')[1];
