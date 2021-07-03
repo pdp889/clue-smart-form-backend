@@ -88,6 +88,7 @@ exports.add_move_post = async(req,res,next) => {
     }
 
     let message = '';
+    let reqBody = req.body;
 
     let playerid = req.body.playerId;
     let request = req.body.request;
@@ -122,7 +123,7 @@ exports.add_move_post = async(req,res,next) => {
     //update all players based on new info.
 
     let updateAll = await updateAllPlayers(decoded);
-    res.json({message: message});
+    res.json({message: message, reqBody: reqBody});
 }
 
 //should delete all users from database
