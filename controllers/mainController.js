@@ -1,16 +1,21 @@
 let Player = require('../models/player');
 const { body,validationResult } = require('express-validator');
+const decoder = require('jwt-decode');
+
 
 // Add player to database
 exports.add_player_post = async(req,res,next) => {
     
     const errors = validationResult(req);
+    let token = req.headers.authorization.split(' ')[1];
+    let decoded = decoder(token).sub;
 
     let player = new Player({
         name: req.body.name,
         tracking_array: req.body.tracking_array,
         number_cards: req.body.number_cards,
-        requests: []
+        requests: [],
+        user: decoded
     })
 
     if (!errors.isEmpty()){
@@ -25,7 +30,11 @@ exports.add_player_post = async(req,res,next) => {
 
 //Remove player from database
 exports.remove_player_post = async(req,res,next) => {
-    let player = await Player.findById(req.body._id);
+    
+    let token = req.headers.authorization.split(' ')[1];
+    let decoded = decoder(token).sub;
+    
+    let player = await Player.find({ _id: req.body._id, user: decoded });
     if (player == null) {
         return res.json({message: 'no record'});
     }
@@ -37,7 +46,10 @@ exports.remove_player_post = async(req,res,next) => {
 
 //Start game - should check whether card amounts add up to 18, and if not return a error
 exports.start_game_get = async(req,res,next) => {
-    let players = await Player.find();
+    let token = req.headers.authorization.split(' ')[1];
+    let decoded = decoder(token).sub;
+    
+    let players = await Player.find({ user: decoded });
     let count = 0;
     Array.from(players).forEach(player => {
         count += player.number_cards;
@@ -51,13 +63,19 @@ exports.start_game_get = async(req,res,next) => {
 
 //send full board in JSON on get
 exports.board_get = async(req,res,next) => {
-    let board = await Player.find();
+    let token = req.headers.authorization.split(' ')[1];
+    let decoded = decoder(token).sub;
+    
+    let board = await Player.find({ user: decoded });
     res.json(board);
 }
 
 // should return player list of names for use in add move form..
 exports.add_move_get = async(req,res,next) => {
-    let board = await Player.find();
+    let token = req.headers.authorization.split(' ')[1];
+    let decoded = decoder(token).sub;
+    
+    let board = await Player.find({ user: decoded });
     res.json(board);
 }
 
@@ -69,8 +87,11 @@ exports.add_move_post = async(req,res,next) => {
     let cardshown = req.body.cardshown;
     let all_no = req.body.all_no;
 
+    let token = req.headers.authorization.split(' ')[1];
+    let decoded = decoder(token).sub;
+
     // this will change the status quo to where it should be.
-    let player = await Player.findById(playerid);
+    let player = await Player.find({ _id: playerid, user: decoded });
     
     if (cardshown >= 0 && all_no === false){
         player.tracking_array[cardshown] = 1;
@@ -87,18 +108,24 @@ exports.add_move_post = async(req,res,next) => {
     
     //update all players based on new info.
 
-    let updateAll = await updateAllPlayers();
+    let updateAll = await updateAllPlayers(decoded);
     res.json({message: updateAll});
 }
 
 //should delete all users from database
 exports.end_game_get = async(req,res,next) => {
-    let message = await Player.collection.drop();
+    let token = req.headers.authorization.split(' ')[1];
+    let decoded = decoder(token).sub;
+    let message = await Player.deleteMany({ user: decoded });
     return res.json({message});
 }
 
 //send board summary in JSON on get
 exports.board_summary_get = async(req,res,next) => {
+    
+    let token = req.headers.authorization.split(' ')[1];
+    let decoded = decoder(token).sub;
+    
     let summary = [
         {
             name: 'Mustard',
@@ -186,7 +213,7 @@ exports.board_summary_get = async(req,res,next) => {
         }
     ]
     let packetTracker = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-    let board = await Player.find();
+    let board = await Player.find({ user: decoded });
     Array.from(board).forEach(obj => {
         let array = obj.tracking_array;
         for (let i = 0; i<array.length; i++){
@@ -211,9 +238,9 @@ exports.board_summary_get = async(req,res,next) => {
 
 //Helper methods for post AddMove
 //this method updates a player object based on the latest information in the database
-const updatePlayer = async (updated) => {
+const updatePlayer = async (updated, decoded) => {
 
-    let yeses = await getFullYesList();
+    let yeses = await getFullYesList(decoded);
     let nos = [];
     let requests = [];
 
@@ -310,9 +337,11 @@ const checkArray = async (numberOfCards, trackingArray) => {
 }
 
 //this provides the full list of ruled out suspects
-const getFullYesList = async() => {
+const getFullYesList = async(decoded) => {
     
-    let allPlayers = await Player.find();
+
+
+    let allPlayers = await Player.find({ user: decoded });
     let yeses = [];
 
     Array.from(allPlayers).forEach( player => {
@@ -328,11 +357,11 @@ const getFullYesList = async() => {
 }
 
 //this cylces through all players calling the update player method.
-const updateAllPlayers = async() => {
-    let players = await Player.find();
+const updateAllPlayers = async(decoded) => {
+    let players = await Player.find({ user: decoded });
     let promises = [];
     Array.from(players).forEach(player => {
-        promises.push(updatePlayer(player))
+        promises.push(updatePlayer(player, decoded))
     });
     const results = await Promise.all(promises);
     return results;
