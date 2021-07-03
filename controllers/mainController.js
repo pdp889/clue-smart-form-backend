@@ -91,8 +91,8 @@ exports.add_move_post = async(req,res,next) => {
     let decoded = decoder(token).sub;
 
     // this will change the status quo to where it should be.
-    let player = await Player.find({ _id: playerid, user: decoded });
-    
+    let player = await Player.findOne({ _id: playerid, user: decoded });
+    console.log(player);
     if (cardshown >= 0 && all_no === false){
         player.tracking_array[cardshown] = 1;
     } else if(all_no === true){
@@ -100,7 +100,12 @@ exports.add_move_post = async(req,res,next) => {
             player.tracking_array[request[i]] = -1;
         }
     } else {
-        player.requests[player.requests.length]= request;
+        console.log(player.requests);
+        let lastSpot = player.requests.length;
+        if (!lastSpot) {
+            lastSpot = 0;
+        }
+        player.requests[lastSpot]= request;
     }
 
     let updated = await Player.findByIdAndUpdate(
