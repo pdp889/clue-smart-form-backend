@@ -93,7 +93,7 @@ exports.add_move_post = async(req,res,next) => {
     let playerid = req.body.playerId;
     let request = req.body.request;
     let cardshown = parseInt(req.body.cardshown);
-    let all_no = req.body.all_no;
+    let all_no = bool;
 
     let token = req.headers.authorization.split(' ')[1];
     let decoded = decoder(token).sub;
@@ -109,7 +109,7 @@ exports.add_move_post = async(req,res,next) => {
             player.tracking_array[request[i]] = -1;
         }
     } else {
-        message='a card is shown but we dont know what';
+        message=`the value of bool is ${bool}, and we should no that a card is shown but not know what`;
         let lastSpot = player.requests.length;
         if (!lastSpot) {
             lastSpot = 0;
