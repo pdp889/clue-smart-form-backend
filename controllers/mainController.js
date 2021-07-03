@@ -87,6 +87,8 @@ exports.add_move_post = async(req,res,next) => {
         bool = true;
     }
 
+    let message = '';
+
     let playerid = req.body.playerId;
     let request = req.body.request;
     let cardshown = parseInt(req.body.cardshown);
@@ -98,15 +100,15 @@ exports.add_move_post = async(req,res,next) => {
     // this will change the status quo to where it should be.
     let player = await Player.findOne({ _id: playerid, user: decoded });
     if (cardshown >= 0 && all_no == false){
-        console.log('A card is shown');
+        message = 'A card is shown';
         player.tracking_array[cardshown] = 1;
     } else if(all_no == true){
-        console.log('no card is shown');
+        message = 'no card is shown';
         for (let i =0; i<3; i++){
             player.tracking_array[request[i]] = -1;
         }
     } else {
-        console.log('a card is shown but we dont know what')
+        message='a card is shown but we dont know what';
         let lastSpot = player.requests.length;
         if (!lastSpot) {
             lastSpot = 0;
@@ -120,7 +122,7 @@ exports.add_move_post = async(req,res,next) => {
     //update all players based on new info.
 
     let updateAll = await updateAllPlayers(decoded);
-    res.json({message: updateAll});
+    res.json({message: message});
 }
 
 //should delete all users from database
