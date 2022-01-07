@@ -107,7 +107,7 @@ exports.add_move_post = async(req,res,next) => {
 
     // this will change the status quo to where it should be.
     let player = await Player.findOne({ _id: playerid, user: decoded });
-    let copy = Object.assign({}, player.tracking_obj);
+    let copy = Object.assign({}, player.tracking_obj["$__parent"]["tracking_obj"]);
     if (cardshown !="Unknown" && all_no == false){
         message = 'A card is shown';
         player.tracking_obj[cardshown] = 1;
