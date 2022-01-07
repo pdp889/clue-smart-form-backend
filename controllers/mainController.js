@@ -108,8 +108,8 @@ exports.add_move_post = async(req,res,next) => {
     // this will change the status quo to where it should be.
     let player = await Player.findOne({ _id: playerid, user: decoded });
     
-    let copy = player.tracking_obj;
-    let copy2 = JSON.parse(JSON.stringify(player.tracking_obj));
+    let copy = JSON.parse(JSON.stringify(player.tracking_obj));
+    player.tracking_obj = JSON.parse(JSON.stringify(player.tracking_obj));
     let copy3 = {
         "White": 0
     };
