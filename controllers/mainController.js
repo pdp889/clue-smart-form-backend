@@ -118,14 +118,14 @@ exports.add_move_post = async(req,res,next) => {
         message = 'A card is shown';
         player.tracking_obj[cardshown] = 1;
         copy[cardshown] = 1;
-        copy2[cardshown] = 1;
+        //copy2[cardshown] = 1;
         copy3[cardshown] = 1;
     } else if(all_no == true){
         message = 'no card is shown';
         for (let i =0; i<3; i++){
             player.tracking_obj[request[i]] = -1;
             copy[cardshown] = -1;
-            copy2[cardshown] = -1;
+            //copy2[cardshown] = -1;
             copy3[cardshown] = -1;
         }
     } else {
