@@ -121,14 +121,13 @@ exports.add_move_post = async(req,res,next) => {
         player.requests = player.requests || [];
         player.requests.push(request);
     }
-    res.json({obj: player.tracking_obj});
-    // let updated = await Player.findByIdAndUpdate(
-    //     player._id, player, { new: true });
+    let updated = await Player.findByIdAndUpdate(
+        player._id, player, { new: true });
     
-    // //update all players based on new info.
+    //update all players based on new info.
 
-    // //let updateAll = await updateAllPlayers(decoded);
-    //res.json({message: message, reqBody: reqBody});
+    let updateAll = await updateAllPlayers(decoded);
+    res.json({message: message, reqBody: reqBody});
 }
 
 //should delete all users from database
