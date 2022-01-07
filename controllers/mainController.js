@@ -127,7 +127,7 @@ exports.add_move_post = async(req,res,next) => {
     
     //update all players based on new info.
 
-    let updateAll = await updateAllPlayers(decoded);
+    //let updateAll = await updateAllPlayers(decoded);
     res.json({message: message, reqBody: reqBody});
 }
 
