@@ -32,10 +32,6 @@ exports.create_user_post = async function (req, res, next) {
         const token = generateAccessToken(newUser)
         res.json({token})
       });
-    
-
-    
-
 }
 
 exports.log_in_post = async function (req, res, next) {

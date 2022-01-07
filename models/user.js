@@ -9,8 +9,6 @@ let UserSchema = new Schema(
     }
 );
 
-
-
 //Virtual for user url
 UserSchema
 .virtual('url')

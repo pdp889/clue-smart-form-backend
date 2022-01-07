@@ -1,7 +1,13 @@
 let Player = require('../models/player');
 const { body,validationResult } = require('express-validator');
 const decoder = require('jwt-decode');
-
+const { default: jwtDecode } = require('jwt-decode');
+const clueCard = {
+    suspects: ['Mustard', 'Plum', 'Green', 'Peacock', 'Scarlet', 'White'],
+    weapons: ['Knife', 'Candlestick', 'Revolver', 'Rope', 'Lead Pipe', 'Wrench'],
+    rooms:['Hall', 'Lounge', 'Dining Room', 'Kitchen', 'Ballroom', 'Conservatory', 'Billiard Room', 'Library', 'Study'],
+    allCards: [].concat(this.suspects, this.weapons, this.rooms)
+}
 
 // Add player to database
 exports.add_player_post = async(req,res,next) => {
@@ -12,7 +18,7 @@ exports.add_player_post = async(req,res,next) => {
 
     let player = new Player({
         name: req.body.name,
-        tracking_array: req.body.tracking_array,
+        tracking_obj: req.body.tracking_obj,
         number_cards: req.body.number_cards,
         requests: [],
         user: decoded
@@ -82,9 +88,10 @@ exports.add_move_get = async(req,res,next) => {
 //should add a move and update the database accordingly
 exports.add_move_post = async(req,res,next) => {
     
-    let bool = false;
+    let allNo = false;
+
     if (req.body.all_no == 'true') {
-        bool = true;
+        allNo = true;
     }
 
     let message = '';
@@ -92,29 +99,27 @@ exports.add_move_post = async(req,res,next) => {
 
     let playerid = req.body.playerId;
     let request = req.body.request;
-    let cardshown = parseInt(req.body.cardshown);
-    let all_no = bool;
+    let cardshown = req.body.cardshown;
+    let all_no = allNo;
 
     let token = req.headers.authorization.split(' ')[1];
     let decoded = decoder(token).sub;
 
     // this will change the status quo to where it should be.
     let player = await Player.findOne({ _id: playerid, user: decoded });
-    if (cardshown >= 0 && all_no == false){
+    if (cardshown !="Unknown" && all_no == false){
         message = 'A card is shown';
-        player.tracking_array[cardshown] = 1;
+        player.tracking_obj[cardshown] = 1;
     } else if(all_no == true){
         message = 'no card is shown';
         for (let i =0; i<3; i++){
-            player.tracking_array[request[i]] = -1;
+            player.tracking_obj[request[i]] = -1;
         }
     } else {
-        message=`the value of bool is ${bool}, and we should no that a card is shown but not know what`;
-        let lastSpot = player.requests.length;
-        if (!lastSpot) {
-            lastSpot = 0;
-        }
-        player.requests[lastSpot]= request;
+        message=`it is ${allNo} that this was an all know, and we should know that a card is shown but not know what`;
+        //we put the request at the end of the array. 
+        player.requests = player.requests || [];
+        player.requests.push(request);
     }
 
     let updated = await Player.findByIdAndUpdate(
@@ -139,239 +144,147 @@ exports.board_summary_get = async(req,res,next) => {
     
     let token = req.headers.authorization.split(' ')[1];
     let decoded = decoder(token).sub;
-    
-    let summary = [
-        {
-            name: 'Mustard',
-            value: null
-        },
-        {
-            name: 'Plum',
-            value: null
-        },
-        {
-            name: 'Green',
-            value: null
-        },
-        {
-            name: 'Peacock',
-            value: null
-        },
-        {
-            name: 'Scarlet',
-            value: null
-        },
-        {
-            name: 'White',
-            value: null
-        },
-        {
-            name: 'Knife',
-            value: null
-        },
-        {
-            name: 'Candlestick',
-            value: null
-        },
-        {
-            name: 'Revolver',
-            value: null
-        },
-        {
-            name: 'Rope',
-            value: null
-        },
-        {
-            name: 'Lead Pipe',
-            value: null
-        },
-        {
-            name: 'Wrench',
-            value: null
-        },
-        {
-            name: 'Hall',
-            value: null
-        },
-        {
-            name: 'Lounge',
-            value: null
-        },
-        {
-            name: 'Dining Room',
-            value: null
-        },
-        {
-            name: 'Kitchen',
-            value: null
-        },
-        {
-            name: 'Ballroom',
-            value: null
-        },
-        {
-            name: 'Conservatory',
-            value: null
-        },
-        {
-            name: 'Billiard Room',
-            value: null
-        },
-        {
-            name: 'Library',
-            value: null
-        },
-        {
-            name: 'Study',
-            value: null
-        }
-    ]
-    let packetTracker = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    let summary = {};
+    let packetTracker = {};
+    clueCard.allCards.forEach(i => {
+        summary[i] = null;
+        packetTracker[i] = 0;
+    });
     let board = await Player.find({ user: decoded });
-    Array.from(board).forEach(obj => {
-        let array = obj.tracking_array;
-        for (let i = 0; i<array.length; i++){
-            let inPacket = 0;
-            if (array[i] === 1){
-                summary[i]["value"] = obj.name;
+
+    Array.from(board).forEach(playerObj => {
+        let trackingObj = playerObj.tracking_obj;
+        clueCard.allCards.forEach(i => {
+            if (trackingObj[i] === 1){
+                //we know who has it, and it's not in packet.
+                summary[i]= playerObj.name;
                 packetTracker[i] +=1;
             }
-            if (array[i] === 0){
+            if (trackingObj[i] === 0){
+                //we don't know about this one.
                 packetTracker[i] += 1;
             }
-        }
+        });
     })
 
-    for (let j = 0; j < packetTracker.length; j ++){
+    clueCard.allCards.forEach(j => {
         if(packetTracker[j] === 0){
-            summary[j]["value"] = 'IN PACKET';
+            //we know it's in packet.
+            summary[j] = 'IN PACKET';
         }
-    }
+    });
     res.json(summary);
 }
 
 //Helper methods for post AddMove
 //this method updates a player object based on the latest information in the database
-const updatePlayer = async (updated, decoded) => {
+const updatePlayer = async (updatedPlayer, decoded) => {
 
     let yeses = await getFullYesList(decoded);
-    let nos = [];
-    let requests = [];
+    let nos = getBlankClueCard(false);
+    let workingRequests = [];
 
-    // creates no list;
-    for (let i =0; i < 21; i++){
-        if (updated.tracking_array[i] === -1){
-            nos.push(i);
+    // creates no map, and updated tracking obj if something is on the yes list;
+    clueCard.allCards.forEach(cardName => {
+        if(updatedPlayer.tracking_obj[cardName] <= 0){
+            if (yeses[cardName] && updatedPlayer.tracking_obj[cardName] == 0){
+                //if it's on the yeses, then we know this player doesn't have this card.
+                updatedPlayer.tracking_obj[cardName] = -1;
+            }                 
+            nos[cardName] = true;
         }
-        if(updated.tracking_array[i] === 0){
-            //check if i is on the yesList
-            for (let k = 0; k < 21; k++){
-                if (yeses[k] === i){
-                    updated.tracking_array[i] = -1;
-                }
-            }
+    });
 
-
-        }
-    }
-
-    updated.requests.forEach(request => {
+    //This loop iterates over each request and does a bunch of ridiculous for loops and eventually 
+    //updates the request or the board as appropriate and adds it back to workingRequests
+    updatedPlayer.requests.forEach(request => {
         let ultimateRequest = [];
         let yes = false;
         //if any value in the request is a yes, 
-        for(let i =0; i<3; i++){
+        request.forEach(card => {
+            if (yeses[card]){
+                yes = true;
+                //this means there's a yes, so we don't do anything else with this request.
+        }});
+
             
-            for(let k=0; k< updated.tracking_array.length; k++){
-                if (updated.tracking_array[request[i]] === 1){
-                    yes = true;
+        if(!yes){  
+            request.forEach(card => {
+                if (!nos[card]){
+                    // this card is not a known no, so we leave it.
+                    ultimateRequest.push(card);
                 }
-            }    
+            });
         }
-            
-        if(yes===false){
-                
-            for(let i =0; i<request.length; i++){
-                let push = 0;
-                if (nos.length > 0){
-                    for(let k=0; k< nos.length; k++){
-                        if (request[i] === nos[k]){                        
-                            push += 1;
-                        }
-                    }    
-                } 
-                if (push === 0){
-                    ultimateRequest.push(request[i]);
-                }    
-                
 
-            }
-
-        }
-            
+        //if there is only one name in the request, we know the player has that card.    
         if (ultimateRequest.length === 1){
-            
-            updated.tracking_array[ultimateRequest[0]] = 1;
+            updatedPlayer.tracking_obj[ultimateRequest[0]] = 1;
         } else if (ultimateRequest.length != 0){
-            requests.push(ultimateRequest);
+            workingRequests.push(ultimateRequest);
         }
         
     })
         
-    updated.requests = requests;
-    let array = await checkArray(updated.number_cards, updated.tracking_array);
-    updated.trackingArray = array;
+    updatedPlayer.requests = workingRequests;
+    let finalUpdatedTrackingObj = await checkTrackingObj(updatedPlayer.number_cards, updatedPlayer.tracking_obj);
+    updatedPlayer.tracking_obj = finalUpdatedTrackingObj;
     
-    let final = await Player.findByIdAndUpdate(updated._id, updated, {new: true});
-
+    let final = await Player.findByIdAndUpdate(updatedPlayer._id, updatedPlayer, {new: true});
     return final;
 }
-//this method checks if the number of a player's known cards are equal to the number of cards in his or her hand
-const checkArray = async (numberOfCards, trackingArray) => {
+//this method checks if the number of a player's known cards are equal to the number of cards in his or her hand, and if so, sets nos for all the other cards.
+const checkTrackingObj = async (numberOfCards, trackingObj) => {
 
     count = 0;
-    for(let i = 0; i < trackingArray.length; i++){
-        if (trackingArray[i] === 1){
+    clueCard.allCards.forEach( card => {
+        if (trackingObj[card] === 1){
             count += 1;
         }
-    }
+    });
 
     if (count >= numberOfCards) {
-        for(let i = 0; i < trackingArray.length; i++){
-            if (trackingArray[i] === 0){
-                trackingArray[i] = -1;
+        clueCard.allCards.forEach( card => {
+            if (trackingObj[card] === 0){
+                trackingObj[card] = -1;
             }
-        }
+        });
     }
-    return trackingArray;
+    return trackingObj;
 }
 
 //this provides the full list of ruled out suspects
 const getFullYesList = async(decoded) => {
-    
-
 
     let allPlayers = await Player.find({ user: decoded });
-    let yeses = [];
+    let yeses = getBlankClueCard(false);
 
     Array.from(allPlayers).forEach( player => {
-        for (let i =0; i < 21; i++){
-            if (player.tracking_array[i] === 1){
-                yeses.push(i);
+        clueCard.allCards.forEach(name => {
+            if (player.tracking_obj[name] === 1){
+                yeses[name] = true;
             }
-        }
-    })
-
+        });
+    });
     return yeses;
-
 }
 
 //this cylces through all players calling the update player method.
 const updateAllPlayers = async(decoded) => {
     let players = await Player.find({ user: decoded });
     let promises = [];
+    //add each player to the promises queue for their update player function.
     Array.from(players).forEach(player => {
         promises.push(updatePlayer(player, decoded))
     });
     const results = await Promise.all(promises);
     return results;
+}
+
+const getBlankClueCard = (initialValue) => {
+    let obj = {};
+    clueCard.allCards.forEach(card => {
+        obj[card] = initialValue;
+    });
+    return obj;
 }
