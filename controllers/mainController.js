@@ -107,14 +107,16 @@ exports.add_move_post = async(req,res,next) => {
 
     // this will change the status quo to where it should be.
     let player = await Player.findOne({ _id: playerid, user: decoded });
-    res.json({obj: player.tracking_obj});
+    let copy = Object.assign({}, player.tracking_obj);
     if (cardshown !="Unknown" && all_no == false){
         message = 'A card is shown';
         player.tracking_obj[cardshown] = 1;
+        copy[cardshown] = 1;
     } else if(all_no == true){
         message = 'no card is shown';
         for (let i =0; i<3; i++){
             player.tracking_obj[request[i]] = -1;
+            copy[cardshown] = 1;
         }
     } else {
         message=`it is ${allNo} that this was an all know, and we should know that a card is shown but not know what`;
@@ -122,7 +124,7 @@ exports.add_move_post = async(req,res,next) => {
         player.requests = player.requests || [];
         player.requests.push(request);
     }
-    res.json({obj: player.tracking_obj});
+    res.json({obj: player.tracking_obj, copy: copy});
     // let updated = await Player.findByIdAndUpdate(
     //     player._id, player, { new: true });
     
