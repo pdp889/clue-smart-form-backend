@@ -109,7 +109,8 @@ exports.add_move_post = async(req,res,next) => {
     let player = await Player.findOne({ _id: playerid, user: decoded });
     
     let copy = JSON.parse(JSON.stringify(player.tracking_obj));
-    player.tracking_obj = JSON.parse(JSON.stringify(player.tracking_obj));
+    player.tracking_obj = {};
+    player.tracking_obj = copy;
     let copy3 = {
         "White": 0
     };
@@ -118,7 +119,6 @@ exports.add_move_post = async(req,res,next) => {
         message = 'A card is shown';
         player.tracking_obj[cardshown] = 1;
         copy[cardshown] = 1;
-        //copy2[cardshown] = 1;
         copy3[cardshown] = 1;
     } else if(all_no == true){
         message = 'no card is shown';
