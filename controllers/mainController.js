@@ -24,13 +24,14 @@ exports.add_player_post = async(req,res,next) => {
         requests: [],
         user: decoded
     })
-
+    let id = player._id;
     if (!errors.isEmpty()){
         return res.json({player, errors:errors.array()})
     } else {
         player.save((err) => {
             if (err) { return next(err); }
-            return res.json({'status': 'success', 'id':player.getId()})
+            
+            return res.json({'status': 'success', 'id':id})
         })
     }
 }
