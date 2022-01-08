@@ -5,9 +5,10 @@ const { default: jwtDecode } = require('jwt-decode');
 const clueCard = {
     suspects: ['Mustard', 'Plum', 'Green', 'Peacock', 'Scarlet', 'White'],
     weapons: ['Knife', 'Candlestick', 'Revolver', 'Rope', 'Lead Pipe', 'Wrench'],
-    rooms:['Hall', 'Lounge', 'Dining Room', 'Kitchen', 'Ballroom', 'Conservatory', 'Billiard Room', 'Library', 'Study'],
-    allCards: [].concat(this.suspects, this.weapons, this.rooms)
+    rooms:['Hall', 'Lounge', 'Dining Room', 'Kitchen', 'Ballroom', 'Conservatory', 'Billiard Room', 'Library', 'Study']
 }
+clueCard.allCards = [].concat(clueCard.suspects, clueCard.weapons, clueCard.rooms);
+let playerUpdatedBool = false;
 
 // Add player to database
 exports.add_player_post = async(req,res,next) => {
@@ -105,7 +106,6 @@ exports.add_move_post = async(req,res,next) => {
     let token = req.headers.authorization.split(' ')[1];
     let decoded = decoder(token).sub;
 
-    // this will change the status quo to where it should be.
     let player = await Player.findOne({ _id: playerid, user: decoded });
     if (cardshown !="Unknown" && all_no == false){
         message = 'A card is shown';
@@ -123,7 +123,6 @@ exports.add_move_post = async(req,res,next) => {
     }
     let updated = await Player.findByIdAndUpdate(
         player._id, player, { new: true });
-    
     //update all players based on new info.
 
     let updateAll = await updateAllPlayers(decoded);
@@ -210,7 +209,7 @@ const updatePlayer = async (updatedPlayer, decoded) => {
         if(!yes){  
             request.forEach(card => {
                 if (!nos[card]){
-                    // this card is not a known no, so we leave it.
+                    // this card is not a known no for this player, so we leave it.
                     ultimateRequest.push(card);
                 }
             });
@@ -219,6 +218,7 @@ const updatePlayer = async (updatedPlayer, decoded) => {
         //if there is only one name in the request, we know the player has that card.    
         if (ultimateRequest.length === 1){
             updatedPlayer.tracking_obj[ultimateRequest[0]] = 1;
+            playerUpdatedBool = true;
         } else if (ultimateRequest.length != 0){
             workingRequests.push(ultimateRequest);
         }
@@ -273,10 +273,15 @@ const updateAllPlayers = async(decoded) => {
     let players = await Player.find({ user: decoded });
     let promises = [];
     //add each player to the promises queue for their update player function.
-    Array.from(players).forEach(player => {
-        promises.push(updatePlayer(player, decoded))
-    });
-    const results = await Promise.all(promises);
+    const results;
+    do {
+        playerUpdatedBool = false;
+        Array.from(players).forEach(player => {
+            promises.push(updatePlayer(player, decoded))
+        });
+        results = await Promise.all(promises);
+    } while (playerUpdatedBool);
+    
     return results;
 }
 
