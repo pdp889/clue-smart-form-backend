@@ -273,7 +273,7 @@ const updateAllPlayers = async(decoded) => {
     let players = await Player.find({ user: decoded });
     let promises = [];
     //add each player to the promises queue for their update player function.
-    const results;
+    const results = [];
     do {
         playerUpdatedBool = false;
         Array.from(players).forEach(player => {
