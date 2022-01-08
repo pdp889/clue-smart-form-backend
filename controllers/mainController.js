@@ -238,19 +238,29 @@ const updatePlayer = async (updatedPlayer, decoded) => {
     return final;
 }
 //this method checks if the number of a player's known cards are equal to the number of cards in his or her hand, and if so, sets nos for all the other cards.
+//also checks that if the number of a player's cards that they don't have is equal to the number of cards in their hand, sets yeses for the cards in their hand.
 const checkTrackingObj = async (numberOfCards, trackingObj) => {
 
-    count = 0;
+    let yesCount = 0;
+    let noCount = 0;
     clueCard.allCards.forEach( card => {
         if (trackingObj[card] === 1){
-            count += 1;
+            yesCount += 1;
+        } else if (trackingObj[card] === -1){
+            noCount += 1;
         }
     });
 
-    if (count >= numberOfCards) {
+    if (yesCount >= numberOfCards) {
         clueCard.allCards.forEach( card => {
             if (trackingObj[card] === 0){
                 trackingObj[card] = -1;
+            }
+        });
+    } else if (noCount >= 21 - numberOfCards){
+        clueCard.allCards.forEach( card => {
+            if (trackingObj[card] === 0){
+                trackingObj[card] = 1;
             }
         });
     }
