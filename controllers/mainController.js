@@ -105,28 +105,35 @@ exports.add_move_post = async(req,res,next) => {
 
     let token = req.headers.authorization.split(' ')[1];
     let decoded = decoder(token).sub;
-
     let player = await Player.findOne({ _id: playerid, user: decoded });
-
-    if (cardshown !="Unknown" && all_no == false){
-        message = 'A card is shown';
-        player.tracking_obj[cardshown] = 1;
-    } else if(all_no == true){
-        message = 'no card is shown';
-        for (let i =0; i<3; i++){
-            player.tracking_obj[request[i]] = -1;
-        }
+    let cardShownBool = (cardshown != "Unknown") ? true:false;
+    //initial error check
+    if (cardShownBool && all_no){
+        //error
+        res.json({mesage:"Cannot be both unknown and have a card value"});
     } else {
-        message=`it is ${allNo} that this was an all know, and we should know that a card is shown but not know what`;
-        //we put the request at the end of the array. 
-        player.requests = player.requests || [];
-        player.requests.push(request);
+        if (cardShownBool && !all_no){
+            message = 'A card is shown and we know what it is';
+            player.tracking_obj[cardshown] = 1;
+        } else if(!cardShownBool && all_no){
+            message = 'no card is shown';
+            for (let i =0; i<3; i++){
+                player.tracking_obj[request[i]] = -1;
+            }
+        } else {
+            message='a card is shown to someone else, but we dont know what';
+            //we put the request at the end of the array. 
+            player.requests = player.requests || [];
+            player.requests.push(request);
+        }
+        let updated = await Player.findByIdAndUpdate(
+            player._id, player, { new: true });
+        //update all players based on new info.
+        let updateAll = await updateAllPlayers(decoded);
+        res.json({message: message, reqBody: reqBody});
     }
-    let updated = await Player.findByIdAndUpdate(
-        player._id, player, { new: true });
-    //update all players based on new info.
-    let updateAll = await updateAllPlayers(decoded);
-    res.json({message: message, reqBody: reqBody});
+
+    
 }
 
 //should delete all users from database
@@ -177,13 +184,14 @@ exports.board_summary_get = async(req,res,next) => {
 //Helper methods for post AddMove
 //this method updates a player object based on the latest information in the database
 const updatePlayer = async (updatedPlayer, decoded) => {
+
     let yeses = await getFullYesList(decoded);
     let nos = getBlankClueCard(false);
     let workingRequests = [];
     // creates no map, and updated tracking obj if something is on the yes list;
     clueCard.allCards.forEach(cardName => {
         if(updatedPlayer.tracking_obj[cardName] <= 0){
-            if (yeses[cardName] && updatedPlayer.tracking_obj[cardName] == 0){
+            if (yeses[cardName]){
                 //if it's on the yeses, then we know this player doesn't have this card.
                 updatedPlayer.tracking_obj[cardName] = -1;
             } 
@@ -193,21 +201,16 @@ const updatePlayer = async (updatedPlayer, decoded) => {
             
         }
     });
-    console.log("nos");
-    console.log(nos);
 
-    //This loop iterates over each request and does a bunch of ridiculous for loops and eventually 
-    //updates the request or the board as appropriate and adds it back to workingRequests
     updatedPlayer.requests.forEach(request => {
         let ultimateRequest = [];
         let yes = false;
-        //if any value in the request is a yes, 
+        //if any value in the request is a yes, for this player 
         request.forEach(card => {
-            if (yeses[card]){
+            if (updatedPlayer.tracking_obj[card] === 1){
                 yes = true;
                 //this means there's a yes, so we don't do anything else with this request.
         }});
-
             
         if(!yes){  
             request.forEach(card => {
@@ -216,22 +219,21 @@ const updatePlayer = async (updatedPlayer, decoded) => {
                     ultimateRequest.push(card);
                 }
             });
+            //if there is only one name in the request, we know the player has that card.    
+            if (ultimateRequest.length === 1){
+                updatedPlayer.tracking_obj[ultimateRequest[0]] = 1;
+                playerUpdatedBool = true;
+            } else if (ultimateRequest.length != 0){
+                workingRequests.push(ultimateRequest);
+            }
         }
 
-        //if there is only one name in the request, we know the player has that card.    
-        if (ultimateRequest.length === 1){
-            updatedPlayer.tracking_obj[ultimateRequest[0]] = 1;
-            playerUpdatedBool = true;
-        } else if (ultimateRequest.length != 0){
-            workingRequests.push(ultimateRequest);
-        }
-        
-    })
+    });
         
     updatedPlayer.requests = workingRequests;
     let finalUpdatedTrackingObj = await checkTrackingObj(updatedPlayer.number_cards, updatedPlayer.tracking_obj);
     updatedPlayer.tracking_obj = finalUpdatedTrackingObj;
-    
+
     let final = await Player.findByIdAndUpdate(updatedPlayer._id, updatedPlayer, {new: true});
     return final;
 }
@@ -276,15 +278,12 @@ const updateAllPlayers = async(decoded) => {
     let players = await Player.find({ user: decoded });
     let promises = [];
     //add each player to the promises queue for their update player function.
-   
     do {
         playerUpdatedBool = false;
         Array.from(players).forEach(player => {
             promises.push(updatePlayer(player, decoded))
         });
-        console.log('all promises added');
         const results = await Promise.all(promises);
-        console.log('first round done');
     } while (playerUpdatedBool);
     
     return 0;
