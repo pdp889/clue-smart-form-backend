@@ -30,7 +30,7 @@ exports.add_player_post = async(req,res,next) => {
     } else {
         player.save((err) => {
             if (err) { return next(err); }
-            return res.json({'status': 'player added'})
+            return res.json({'status': 'success', 'id':player.getId()})
         })
     }
 }
