@@ -88,7 +88,7 @@ exports.add_move_get = async(req,res,next) => {
 
 //should add a move and update the database accordingly
 exports.add_move_post = async(req,res,next) => {
-    console.log("Add move");
+
     let allNo = false;
 
     if (req.body.all_no == 'true') {
@@ -105,9 +105,9 @@ exports.add_move_post = async(req,res,next) => {
 
     let token = req.headers.authorization.split(' ')[1];
     let decoded = decoder(token).sub;
-    console.log(playerid);
+
     let player = await Player.findOne({ _id: playerid, user: decoded });
-    console.log(player);
+
     if (cardshown !="Unknown" && all_no == false){
         message = 'A card is shown';
         player.tracking_obj[cardshown] = 1;
@@ -125,7 +125,6 @@ exports.add_move_post = async(req,res,next) => {
     let updated = await Player.findByIdAndUpdate(
         player._id, player, { new: true });
     //update all players based on new info.
-    console.log('beforeUpdateAllPlayers');
     let updateAll = await updateAllPlayers(decoded);
     res.json({message: message, reqBody: reqBody});
 }
@@ -178,21 +177,24 @@ exports.board_summary_get = async(req,res,next) => {
 //Helper methods for post AddMove
 //this method updates a player object based on the latest information in the database
 const updatePlayer = async (updatedPlayer, decoded) => {
-    console.log(updatedPlayer);
     let yeses = await getFullYesList(decoded);
     let nos = getBlankClueCard(false);
     let workingRequests = [];
-
     // creates no map, and updated tracking obj if something is on the yes list;
     clueCard.allCards.forEach(cardName => {
         if(updatedPlayer.tracking_obj[cardName] <= 0){
             if (yeses[cardName] && updatedPlayer.tracking_obj[cardName] == 0){
                 //if it's on the yeses, then we know this player doesn't have this card.
                 updatedPlayer.tracking_obj[cardName] = -1;
-            }                 
-            nos[cardName] = true;
+            } 
+            if (updatedPlayer.tracking_obj[cardName] == -1){
+                nos[cardName] = true;
+            }                
+            
         }
     });
+    console.log("nos");
+    console.log(nos);
 
     //This loop iterates over each request and does a bunch of ridiculous for loops and eventually 
     //updates the request or the board as appropriate and adds it back to workingRequests
