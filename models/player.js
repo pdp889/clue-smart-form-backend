@@ -8,6 +8,7 @@ let playerSchema = new Schema ({
     number_cards: {type: Number, required: true},
     //requests is an array of arrays following the general format [[Suspect, Weapon, Room]]
     requests: {type: Array, required: true},
+    is_user_player: {type:Boolean, required: true},
     user: {type: Schema.Types.ObjectId, ref: 'User', required: true}
 })
 

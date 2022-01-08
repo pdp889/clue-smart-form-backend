@@ -22,6 +22,7 @@ exports.add_player_post = async(req,res,next) => {
         tracking_obj: req.body.tracking_obj,
         number_cards: req.body.number_cards,
         requests: [],
+        is_user_player: (req.body.is_user_player==="true"),
         user: decoded
     })
     let id = player._id;
@@ -59,12 +60,20 @@ exports.start_game_get = async(req,res,next) => {
     
     let players = await Player.find({ user: decoded });
     let count = 0;
+    let numUserPlayers = 0;
     Array.from(players).forEach(player => {
         count += player.number_cards;
+        if (player.is_user_player) {
+            numUserPlayers += 1;
+        }
     })
     if (count === 18){
         res.json({message: 'count is 18, start game!'})
-    }else {
+    }
+    else if (numUserPlayers > 1){
+        res.json({error:'more than one user playerr. Correct so only one user player.'});
+    }
+    else {
         res.json({error: 'count is ' + count + ', correct so it is 18'})
     }
 }
