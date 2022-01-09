@@ -185,7 +185,7 @@ exports.board_summary_get = async(req,res,next) => {
     clueCard.allCards.forEach(j => {
         if(packetTracker[j] === 0){
             //we know it's in packet.
-            summary[j] = 'IN PACKET';
+            summary[j] = 'PACKET';
         }
     });
     res.json(summary);
